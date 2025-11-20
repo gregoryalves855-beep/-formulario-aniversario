@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Confirmação de Presença - Aniversário</title>
+  <style>
+    :root{--accent:#d88b8b;--bg:#fff0f3;--panel:#f8e8e8;--text:#8b4f4f}
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    body{margin:0;background:linear-gradient(180deg,#f7dfe0, #f1c8c8);display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--text)}
+    .container{width:960px;max-width:96%;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.15);overflow:hidden}
+    header{padding:18px 22px;background:var(--panel);display:flex;align-items:center;gap:16px}
+    header h1{margin:0;font-size:18px;color:var(--text)}
+    .content{display:flex;gap:20px;padding:22px}
+    .invite{flex:1;display:flex;align-items:center;justify-content:center;padding:14px}
+    .invite img{max-width:100%;height:auto;border-radius:8px;cursor:pointer;border:6px solid rgba(217,145,145,0.18)}
+
+    .card{width:420px;max-width:42%;background:var(--bg);padding:18px;border-radius:10px}
+    .card h2{margin:0 0 8px 0;font-size:20px}
+    .card p{margin:0 0 14px 0;color:#7a4d4d}
+    label{display:block;font-size:14px;margin:8px 0 6px}
+    input[type=text],input[type=tel],textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(139,79,79,0.12)}
+    textarea{min-height:80px}
+    .row{display:flex;gap:8px}
+    .btn{display:inline-block;padding:10px 12px;border-radius:8px;border:0;background:var(--accent);color:white;cursor:pointer}
+    .btn.secondary{background:transparent;color:var(--text);border:1px solid rgba(139,79,79,0.12)}
+    .muted{font-size:13px;color:#9d6b6b}
+    .center{text-align:center}
+
+    /* modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;visibility:hidden;opacity:0;transition:all .18s}
+    .modal.open{visibility:visible;opacity:1}
+    .modal .panel{background:white;padding:18px;border-radius:12px;max-width:520px;width:100%}
+
+    @media (max-width:760px){.content{flex-direction:column}.card{max-width:100%;width:100%}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Convite - Clique para confirmar presença</h1>
+      <div style="margin-left:auto" class="muted">Aniversário - Rebecca</div>
+    </header>
+
+    <div class="content">
+      <div class="invite">
+        <!-- Substitua "invitation.jpg" pelo nome real do arquivo do convite se quiser mostrar a imagem que você enviou -->
+        <img id="invitationImg" src="invitation.jpg" alt="Convite de aniversário - clique para confirmar" />
+      </div>
+
+      <aside class="card">
+        <h2>Confirme sua presença</h2>
+        <p class="muted">Clique na imagem do convite ou preencha o formulário abaixo.</p>
+
+        <label for="name">Nome</label>
+        <input id="name" type="text" placeholder="Seu nome" />
+
+        <label for="phone">Telefone (opcional)</label>
+        <input id="phone" type="tel" placeholder="(xx) 9xxxx-xxxx" />
+
+        <label for="attend">Vai comparecer?</label>
+        <select id="attend">
+          <option value="sim">Sim</option>
+          <option value="nao">Não</option>
+          <option value="talvez">Talvez</option>
+        </select>
+
+        <label for="guests">Quantidade de acompanhantes</label>
+        <input id="guests" type="text" placeholder="0" />
+
+        <label for="message">Mensagem (opcional)</label>
+        <textarea id="message" placeholder="Deseja adicionar algo?"></textarea>
+
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button id="submitBtn" class="btn">Confirmar presença</button>
+          <button id="whatsappBtn" class="btn secondary">Confirmar pelo WhatsApp</button>
+        </div>
+
+        <p class="muted" style="margin-top:12px">Prazo para confirmar: até 05 de janeiro. Contato via WhatsApp: <strong>34984440781</strong></p>
+
+        <!-- Mensagem de confirmação (aparece após envio) -->
+        <div id="confirmationMessage" style="display:none;margin-top:12px;padding:10px;background:#e8f5e8;border:1px solid #4caf50;border-radius:8px;color:#2e7d32;text-align:center;">
+          <strong>Sua presença foi confirmada com sucesso!</strong> Obrigado por responder.
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Modal que abre ao clicar na imagem -->
+  <div id="modal" class="modal" role="dialog" aria-hidden="true">
+    <div class="panel">
+      <h3>Confirmar presença</h3>
+      <p class="muted">Preencha seus dados e confirme — ou use o botão do WhatsApp.</p>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button id="modalClose" class="btn secondary">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const whatsappNumber = '34984440781'; // formato sem espaços
+
+    // Configurações para salvar no GitHub (Issues)
+    // Substitua pelos seus valores:
+    const githubRepo = 'seu-usuario/seu-repositorio'; // Exemplo: 'usuario/repo'
+    const githubToken = 'seu-token-de-acesso-pessoal'; // Gere um token em https://github.com/settings/tokens com permissão 'repo' ou 'public_repo'
+
+    // UI elements
+    const invitationImg = document.getElementById('invitationImg');
+    const modal = document.getElementById('modal');
+    const modalClose = document.getElementById('modalClose');
+    const nameInput = document.getElementById('name');
+    const phoneInput = document.getElementById('phone');
+    const attendSelect = document.getElementById('attend');
+    const guestsInput = document.getElementById('guests');
+    const messageInput = document.getElementById('message');
+    const submitBtn = document.getElementById('submitBtn');
+    const whatsappBtn = document.getElementById('whatsappBtn');
+    const confirmationMessage = document.getElementById('confirmationMessage');
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return s.replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    invitationImg.addEventListener('click', () => {
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    });
+    modalClose.addEventListener('click', () => {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    submitBtn.addEventListener('click', async () => {
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert('Por favor, informe seu nome.');
+        nameInput.focus();
+        return;
+      }
+
+      // Preparar dados para criar um Issue no GitHub
+      const title = `Confirmação de Presença: ${name}`;
+      const body = `
+**Nome:** ${escapeHtml(name)}
+**Telefone:** ${escapeHtml(phoneInput.value.trim())}
+**Vai comparecer:** ${attendSelect.value}
+**Acompanhantes:** ${escapeHtml(guestsInput.value.trim())}
+**Mensagem:** ${escapeHtml(messageInput.value.trim())}
+      `.trim();
+
+      try {
+        // Enviar para GitHub Issues
+        const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `token ${githubToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: title,
+            body: body,
+            labels: ['confirmação-presença'] // Opcional: adicione labels se quiser
+          })
+        });
+
+        if (response.ok) {
+          // Mostrar mensagem de confirmação
+          confirmationMessage.style.display = 'block';
+          setTimeout(() => {
+            confirmationMessage.style.display = 'none'; // Ocultar após 5 segundos
+          }, 5000);
+
+          // Limpar campos
+          nameInput.value = '';
+          phoneInput.value = '';
+          guestsInput.value = '';
+          messageInput.value = '';
+          attendSelect.value = 'sim'; // Resetar para padrão
+        } else {
+          throw new Error('Erro na resposta da API');
+        }
+      } catch (error) {
+        alert('Erro ao enviar. Verifique suas configurações do GitHub ou tente novamente. Erro: ' + error.message);
+      }
+    });
+
+    whatsappBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim() || 'Olá';
+      const attend = attendSelect.value;
+      const guests = guestsInput.value.trim() || '0';
+      const msg = messageInput.value.trim();
+      let text = `${name} confirma presença: ${attend}. Acompanhantes: ${guests}.`;
+      if (msg) text += ' Mensagem: ' + msg;
+      const encoded = encodeURIComponent(text);
+      const url = `https://wa.me/${whatsappNumber}?text=${encoded}`;
+      window.open(url, '_blank');
+    });
+
+    // Se quiser, detectar se a imagem não existe e mostrar uma instrução para o usuário
+    invitationImg.addEventListener('error', () => {
+      invitationImg.src = '';
+      invitationImg.alt = 'Imagem não encontrada. Coloque o arquivo "invitation.jpg" na mesma pasta deste HTML ou edite o src.';
+      invitationImg.style.border = '2px dashed #d5a3a3';
+      invitationImg.style.padding = '28px';
+      invitationImg.style.background = 'linear-gradient(180deg,#fff,#fdecec)';
+    });
+  </script>
+</body>
+</html>
